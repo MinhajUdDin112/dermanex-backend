@@ -1,0 +1,37 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  email: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  hashed_password: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  full_name: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  bio: string | null;
+
+  @Column({ default: true })
+  is_active: boolean;
+
+  @Column({ type: 'varchar', nullable: true, default: null })
+  profilePicture: string | null;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
