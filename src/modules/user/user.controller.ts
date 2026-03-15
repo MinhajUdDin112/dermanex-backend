@@ -22,7 +22,12 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { UserService } from './user.service';
-import { ChangePasswordDto, UpdateProfileDto, UserInfoDto } from './dto';
+import {
+  ChangePasswordDto,
+  SaveSkinGoalsDto,
+  UpdateProfileDto,
+  UserInfoDto,
+} from './dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('user')
@@ -219,5 +224,73 @@ export class UserController {
   })
   async changePassword(@Req() req: any, @Body() body: ChangePasswordDto) {
     return this.userService.changePassword(req.user?.id, body);
+  }
+
+  @Patch('skin-goals')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Save skin goals and complete onboarding',
+    description:
+      'Save selected skin goals for the authenticated user and set isOnboarded to true',
+  })
+  @ApiBody({
+    type: SaveSkinGoalsDto,
+    description: 'Selected skin goals',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Skin goals saved successfully',
+    schema: {
+      example: {
+        message: 'Skin goals saved successfully',
+        data: {
+          id: 'uuid',
+          email: 'user@example.com',
+          full_name: 'John Doe',
+          bio: 'Skincare enthusiast and product tester.',
+          is_active: true,
+          isOnboarded: true,
+          skinGoals: ['clear_acne', 'enhance_glow'],
+          profilePicture: null,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation error',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: ['goals must contain at least one item'],
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        error: 'Unauthorized',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'User not found',
+        error: 'Not Found',
+      },
+    },
+  })
+  async saveSkinGoals(@Req() req: any, @Body() body: SaveSkinGoalsDto) {
+    return this.userService.saveSkinGoals(req.user?.id, body);
   }
 }

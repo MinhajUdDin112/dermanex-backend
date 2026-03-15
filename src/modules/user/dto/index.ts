@@ -1,3 +1,4 @@
-export * from './user-info.dto';
+﻿export * from './user-info.dto';
 export * from './update-profile.dto';
 export * from './change-password.dto';
+export * from './save-skin-goals.dto';

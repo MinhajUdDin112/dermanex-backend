@@ -19,6 +19,15 @@ export class UserInfoDto {
   @ApiProperty({ example: true })
   is_active: boolean;
 
+  @ApiProperty({ example: false })
+  isOnboarded: boolean;
+
+  @ApiProperty({
+    example: ['clear_acne', 'enhance_glow'],
+    isArray: true,
+  })
+  skinGoals: string[];
+
   @ApiProperty({ example: '2026-03-14T07:55:00.000Z' })
   createdAt: Date;
 

@@ -6,7 +6,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entity/user.entity';
-import { ChangePasswordDto, UpdateProfileDto, UserInfoDto } from './dto';
+import {
+  ChangePasswordDto,
+  SaveSkinGoalsDto,
+  UpdateProfileDto,
+  UserInfoDto,
+} from './dto';
 import { S3Service } from 'src/common/services/s3.service';
 import * as bcrypt from 'bcrypt';
 
@@ -112,6 +117,24 @@ export class UserService {
 
     return {
       message: 'Password updated successfully',
+    };
+  }
+
+  async saveSkinGoals(userId: string, dto: SaveSkinGoalsDto) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.skinGoals = dto.goals;
+    user.isOnboarded = true;
+
+    const saved = await this.userRepository.save(user);
+    const { hashed_password, ...userData } = saved;
+
+    return {
+      message: 'Skin goals saved successfully',
+      data: userData,
     };
   }
 }

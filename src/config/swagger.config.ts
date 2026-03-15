@@ -2,8 +2,8 @@ import { DocumentBuilder } from '@nestjs/swagger';
 import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 
 export const swaggerConfig = new DocumentBuilder()
-  .setTitle('Fitness apis')
-  .setDescription('API documentation for app')
+  .setTitle('dermanex apis')
+  .setDescription('API documentation for dermanex app')
   .setVersion('1.0')
   .addBearerAuth(
     // 👈 This adds the Bearer Token option in Swagger UI
@@ -35,7 +35,7 @@ const theme = new SwaggerTheme();
 
 export const swaggerCustomOptions = {
   customCss: theme.getBuffer(SwaggerThemeNameEnum.CLASSIC),
-  customSiteTitle: 'Fitness APIs',
+  customSiteTitle: 'dermanex APIs',
   swaggerOptions: {
     persistAuthorization: true,
     filter: true,

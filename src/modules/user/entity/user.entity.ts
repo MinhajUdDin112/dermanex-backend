@@ -26,6 +26,15 @@ export class User {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ default: false })
+  isOnboarded: boolean;
+
+  @Column('text', {
+    array: true,
+    default: () => 'ARRAY[]::text[]',
+  })
+  skinGoals: string[];
+
   @Column({ type: 'varchar', nullable: true, default: null })
   profilePicture: string | null;
 
