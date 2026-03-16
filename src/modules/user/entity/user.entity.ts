@@ -21,6 +21,12 @@ export class User {
   full_name: string | null;
 
   @Column({ type: 'varchar', nullable: true })
+  reset_password_otp_hash: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  reset_password_otp_expires_at: Date | null;
+
+  @Column({ type: 'varchar', nullable: true })
   bio: string | null;
 
   @Column({ default: true })

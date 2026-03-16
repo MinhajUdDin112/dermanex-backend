@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
+import { SkinAiModule } from './modules/skin-ai/skin-ai.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { UserModule } from './modules/user/user.module';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     AuthModule,
     UserModule,
+    SkinAiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
