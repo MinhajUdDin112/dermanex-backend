@@ -4,10 +4,16 @@ import {
   MaxFileSizeValidator,
   ParseFilePipe,
   Post,
+  Get,
+  Req,
+  UnauthorizedException,
+  NotFoundException,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -16,6 +22,8 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SkinAiService } from './skin-ai.service';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { Request } from 'express';
 
 @ApiTags('skin-ai')
 @Controller('skin-ai')
@@ -23,6 +31,8 @@ export class SkinAiController {
   constructor(private readonly skinAiService: SkinAiService) {}
 
   @Post('predict')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('access-token')
   @UseInterceptors(FileInterceptor('image'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Analyze a skin image with the AI model' })
@@ -44,19 +54,22 @@ export class SkinAiController {
     description: 'Prediction result from the AI model',
     schema: {
       example: {
+        id: 'uuid',
+        scannedAt: '2026-03-16T12:00:00.000Z',
+        image_url: 'https://bucket.s3.amazonaws.com/skin-scans/123.jpg',
+        confidence: 45.64,
+        inflammation: 'low',
         model: 'densenet',
         predictions: [
-          { label: 'acne', probability: 0.45642799139022827 },
-          { label: 'dark spots', probability: 0.3984789550304413 },
-          { label: 'normal skin', probability: 0.08577688038349152 },
-          { label: 'puffy eyes', probability: 0.056703899055719376 },
-          { label: 'wrinkles', probability: 0.0026123858988285065 },
+          { label: 'acne', percentage: 45.64 },
+          { label: 'dark spots', percentage: 39.85 },
         ],
         top_label: 'acne',
       },
     },
   })
   async predictSkin(
+    @Req() req: any,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -67,6 +80,61 @@ export class SkinAiController {
     )
     file: Express.Multer.File,
   ) {
-    return this.skinAiService.predict(file);
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    return this.skinAiService.predict(file, userId);
+  }
+
+  @Get('latest-scan')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Get latest skin prediction',
+    description: 'Fetch the most recent prediction for the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Latest prediction',
+    schema: {
+      example: {
+        id: 'uuid',
+        scannedAt: '2026-03-16T12:00:00.000Z',
+        image_url: 'https://bucket.s3.amazonaws.com/skin-scans/123.jpg',
+        confidence: 45.64,
+        inflammation: 'low',
+        model: 'densenet',
+        predictions: [
+          { label: 'acne', percentage: 45.64 },
+          { label: 'dark spots', percentage: 39.85 },
+        ],
+        top_label: 'acne',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No prediction found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'No prediction found',
+        error: 'Not Found',
+      },
+    },
+  })
+  async getLatest(@Req() req: any) {
+    const userId = (req as any).user?.id as string | undefined;
+    if (!userId) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    const latest = await this.skinAiService.getLatestPrediction(userId);
+    if (!latest) {
+      throw new NotFoundException('No prediction found');
+    }
+
+    return latest;
   }
 }
