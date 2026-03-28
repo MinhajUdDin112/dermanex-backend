@@ -17,6 +17,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiOkResponse,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -24,6 +25,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { SkinAiService } from './skin-ai.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { Request } from 'express';
+import { LatestMorningEveningDto } from './dto/latest-time-of-day-scan.dto';
 
 @ApiTags('skin-ai')
 @Controller('skin-ai')
@@ -73,7 +75,7 @@ export class SkinAiController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }),
           //   new FileTypeValidator({ fileType: 'image/(jpeg|png)' }),
         ],
       }),
@@ -136,5 +138,26 @@ export class SkinAiController {
     }
 
     return latest;
+  }
+
+  @Get('dashboard')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Get latest morning and evening scans',
+    description:
+      'Fetch the most recent morning scan and evening scan for the authenticated user',
+  })
+  @ApiOkResponse({
+    description: 'Latest morning and evening scans',
+    type: LatestMorningEveningDto,
+  })
+  async getLatestMorningEvening(@Req() req: any) {
+    const userId = (req as any).user?.id as string | undefined;
+    if (!userId) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    return this.skinAiService.getLatestByTimeOfDay(userId);
   }
 }

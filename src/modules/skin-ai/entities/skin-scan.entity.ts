@@ -44,4 +44,23 @@ export class SkinScan {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ type: 'enum', enum: ['morning', 'evening'], nullable: true })
+  timeOfDay: 'morning' | 'evening';
+
+  // ✅ BEAUTY DATA
+  @Column({ type: 'int', nullable: true })
+  skin_score: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metrics: any;
+
+  @Column({ type: 'jsonb', nullable: true })
+  insights: string[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  ritual: any[];
+
+  @Column({ type: 'int', nullable: true })
+  progress: number;
 }

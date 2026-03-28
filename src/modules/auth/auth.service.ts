@@ -134,8 +134,7 @@ export class AuthService {
     });
 
     return {
-      message:
-        'If the email exists, an OTP has been sent to reset the password.',
+      message: 'OTP has been sent to reset the password.',
     };
   }
 
