@@ -1,4 +1,9 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { S3Service } from 'src/common/services/s3.service';
@@ -484,6 +489,60 @@ export class SkinAiService {
       insights: scan.insights ?? null,
       ritual: scan.ritual ?? null,
       progress: scan.progress ?? null,
+    };
+  }
+
+  async completeRitualStep(
+    userId: string,
+    timeOfDay: 'morning' | 'evening',
+    stepNumber: number,
+  ) {
+    const scan = await this.skinScanRepository.findOne({
+      where: {
+        user: { id: userId },
+        timeOfDay: timeOfDay,
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!scan) {
+      throw new NotFoundException(`${timeOfDay} ritual not found`);
+    }
+
+    // ✅ enforce step order
+    const currentStep = scan.ritual.find((s) => s.status === 'pending');
+
+    if (currentStep && currentStep.step !== stepNumber) {
+      throw new BadRequestException(`Complete step ${currentStep.step} first`);
+    }
+
+    // ✅ update step
+    scan.ritual = scan.ritual.map((step) => {
+      if (step.step === stepNumber) {
+        return { ...step, status: 'completed' };
+      }
+      return step;
+    });
+
+    // ✅ progress calculation
+    const totalSteps = scan.ritual.length;
+    const completedSteps = scan.ritual.filter(
+      (s) => s.status === 'completed',
+    ).length;
+
+    scan.progress = Math.round((completedSteps / totalSteps) * 100);
+
+    await this.skinScanRepository.save(scan);
+
+    return {
+      msg: `${timeOfDay} step completed`,
+      statusCode: 200,
+      data: {
+        ritual: scan.ritual,
+        progress: scan.progress,
+        currentStep:
+          scan.ritual.find((s) => s.status === 'pending')?.step || null,
+      },
     };
   }
 }

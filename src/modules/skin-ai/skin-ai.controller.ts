@@ -11,6 +11,9 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Patch,
+  Param,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,6 +23,7 @@ import {
   ApiOkResponse,
   ApiResponse,
   ApiTags,
+  ApiParam,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SkinAiService } from './skin-ai.service';
@@ -159,5 +163,22 @@ export class SkinAiController {
     }
 
     return this.skinAiService.getLatestByTimeOfDay(userId);
+  }
+
+  @Patch('step/:stepNumber')
+  @ApiOperation({ summary: 'Mark ritual step as completed' })
+  @ApiParam({ name: 'stepNumber', type: 'number', example: 1 })
+  @ApiParam({ name: 'timeOfDay', enum: ['morning', 'evening'] })
+  @ApiResponse({ status: 200, description: 'Step updated successfully' })
+  async completeStep(
+    @Req() req: any,
+    @Param('stepNumber') stepNumber: number,
+    @Param('timeOfDay') timeOfDay: 'morning' | 'evening',
+  ) {
+    return this.skinAiService.completeRitualStep(
+      req.user?.id,
+      timeOfDay,
+      Number(stepNumber),
+    );
   }
 }
