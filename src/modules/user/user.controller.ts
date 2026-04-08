@@ -29,6 +29,7 @@ import {
   UserInfoDto,
 } from './dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Express } from 'express';
 
 @ApiTags('user')
 @Controller('user')

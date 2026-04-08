@@ -8,6 +8,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { SkinAiModule } from './modules/skin-ai/skin-ai.module';
+import { ProductModule } from './modules/product/product.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SkinAiModule } from './modules/skin-ai/skin-ai.module';
     AuthModule,
     UserModule,
     SkinAiModule,
+    ProductModule,
   ],
   controllers: [AppController],
   providers: [AppService],
