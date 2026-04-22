@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ScanBarcodeDto {
   @ApiProperty({
-    example: '5054614916012',
+    example: '0345334322085',
     description: 'Product barcode to scan and analyze',
     type: String,
   })
