@@ -40,5 +40,6 @@ async function bootstrap() {
 
   console.log(`Server running on http://localhost:${port}`);
   console.log(` Swagger Docs available at http://localhost:${port}/docs`);
+  console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 bootstrap();
