@@ -7,6 +7,7 @@ import {
   ForgotPasswordRequestDto,
   ResetPasswordDto,
   ConfirmOtpDto,
+  VerifyRegistrationOtpDto,
 } from './dto';
 
 @ApiTags('auth')
@@ -18,7 +19,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register a new user',
     description:
-      'Create a new user account with email, full name, and password',
+      'Create an unverified user account and send an OTP to verify the email',
   })
   @ApiBody({
     type: RegisterDto,
@@ -26,28 +27,75 @@ export class AuthController {
   })
   @ApiResponse({
     status: 201,
-    description: 'User registered successfully',
+    description: 'OTP sent to verify the email',
     schema: {
       example: {
-        message: 'User registered successfully',
-        email: 'user@example.com',
-        full_name: 'John Doe',
+        message: 'OTP has been sent to verify the email.',
       },
     },
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - validation error or passwords do not match',
+    description: 'Bad request - validation error or email already registered',
     schema: {
       example: {
         statusCode: 400,
-        message: ['Email must be a valid email address'],
+        message: 'Email already registered',
         error: 'Bad Request',
       },
     },
   })
   async register(@Body() registerDto: RegisterDto) {
     return await this.authService.register(registerDto);
+  }
+
+  @Post('verify-registration-otp')
+  @ApiOperation({
+    summary: 'Verify registration OTP',
+    description:
+      'Verify the OTP sent during registration, mark email as verified and return access token',
+  })
+  @ApiBody({
+    type: VerifyRegistrationOtpDto,
+    description: 'Email and OTP to verify registration',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User registered successfully',
+    schema: {
+      example: {
+        message: 'User registered successfully',
+        data: {
+          id: 'uuid',
+          email: 'user@example.com',
+          full_name: 'John Doe',
+          is_active: true,
+          is_email_verified: true,
+        },
+        token: {
+          access_token: 'jwt_token_here',
+          token_type: 'bearer',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired OTP',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid or expired OTP',
+        error: 'Bad Request',
+      },
+    },
+  })
+  async verifyRegistrationOtp(
+    @Body() verifyRegistrationOtpDto: VerifyRegistrationOtpDto,
+  ) {
+    return await this.authService.verifyRegistrationOtp(
+      verifyRegistrationOtpDto,
+    );
   }
 
   @Post('login')

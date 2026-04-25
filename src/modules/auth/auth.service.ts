@@ -9,12 +9,16 @@ import {
   ForgotPasswordRequestDto,
   ResetPasswordDto,
   ConfirmOtpDto,
+  VerifyRegistrationOtpDto,
 } from './dto';
 import { User } from '../user/entity/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from 'src/common/services/email.service';
-import { buildResetOtpEmail } from 'src/common/utils/email-templates';
+import {
+  buildRegistrationOtpEmail,
+  buildResetOtpEmail,
+} from 'src/common/utils/email-templates';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +33,6 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, full_name, password, confirm_password } = registerDto;
 
-    // Validate passwords match
     if (password !== confirm_password) {
       throw new BadRequestException('Passwords do not match');
     }
@@ -37,24 +40,93 @@ export class AuthService {
     const existingUser = await this.userRepository.findOne({
       where: { email },
     });
-    if (existingUser) {
+
+    if (existingUser && existingUser.is_email_verified) {
       throw new BadRequestException('Email already registered');
     }
 
-    // Hash password
     const saltRounds = 10;
     const hashed_password = await bcrypt.hash(password, saltRounds);
 
-    // TODO: Create user in database
-    let user = await this.userRepository.create({
-      email,
-      full_name,
-      hashed_password,
+    const otp = this.generateOtp(6);
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = this.getOtpExpiryDate();
+
+    let user: User;
+    if (existingUser) {
+      existingUser.full_name = full_name;
+      existingUser.hashed_password = hashed_password;
+      existingUser.email_verification_otp_hash = otpHash;
+      existingUser.email_verification_otp_expires_at = expiresAt;
+      user = await this.userRepository.save(existingUser);
+    } else {
+      const created = this.userRepository.create({
+        email,
+        full_name,
+        hashed_password,
+        email_verification_otp_hash: otpHash,
+        email_verification_otp_expires_at: expiresAt,
+      });
+      user = await this.userRepository.save(created);
+    }
+
+    const { subject, html, text } = buildRegistrationOtpEmail({
+      otp,
+      expiresInMinutes: this.getOtpExpiryMinutes(),
     });
 
-    user = await this.userRepository.save(user);
+    await this.emailService.sendMail({
+      to: email,
+      subject,
+      html,
+      text,
+    });
 
-    const accessToken = await this.generateTokens(user.id, user.email);
+    return {
+      message: 'OTP has been sent to verify the email.',
+    };
+  }
+
+  async verifyRegistrationOtp(dto: VerifyRegistrationOtpDto) {
+    const { email, otp } = dto;
+
+    const user = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (!user || !user.email_verification_otp_hash) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    if (user.is_email_verified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const expiresAt = user.email_verification_otp_expires_at;
+    if (!expiresAt || expiresAt.getTime() < Date.now()) {
+      user.email_verification_otp_hash = null;
+      user.email_verification_otp_expires_at = null;
+      await this.userRepository.save(user);
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    const otpMatches = await bcrypt.compare(
+      otp,
+      user.email_verification_otp_hash,
+    );
+    if (!otpMatches) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    user.is_email_verified = true;
+    user.email_verification_otp_hash = null;
+    user.email_verification_otp_expires_at = null;
+    const savedUser = await this.userRepository.save(user);
+
+    const accessToken = await this.generateTokens(
+      savedUser.id,
+      savedUser.email,
+    );
     const token = {
       access_token: accessToken.accessToken,
       token_type: 'bearer',
@@ -62,7 +134,7 @@ export class AuthService {
 
     return {
       message: 'User registered successfully',
-      data: user,
+      data: savedUser,
       token,
     };
   }
@@ -71,7 +143,7 @@ export class AuthService {
     const { email, password } = loginDto;
 
     const user = await this.userRepository.findOne({
-      where: { email },
+      where: { email, is_email_verified: true },
     });
 
     if (!user || !user.hashed_password) {

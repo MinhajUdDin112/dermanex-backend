@@ -13,3 +13,19 @@ export function buildResetOtpEmail(params: {
 
   return { subject, html, text };
 }
+
+export function buildRegistrationOtpEmail(params: {
+  otp: string;
+  expiresInMinutes: number;
+}): { subject: string; html: string; text: string } {
+  const { otp, expiresInMinutes } = params;
+  const subject = 'Verify your email';
+  const html = `
+    <p>Your OTP to verify your email is:</p>
+    <h2>${otp}</h2>
+    <p>This code will expire in ${expiresInMinutes} minutes.</p>
+  `;
+  const text = `Your OTP to verify your email is ${otp}. This code will expire in ${expiresInMinutes} minutes.`;
+
+  return { subject, html, text };
+}
