@@ -4,37 +4,25 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer, { Transporter } from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly transporter: Transporter | null = null;
   private readonly fromAddress: string | null = null;
+  private readonly isConfigured: boolean = false;
 
   constructor(private readonly configService: ConfigService) {
-    const host = this.configService.get<string>('SMTP_HOST');
-    const port = Number(this.configService.get<string>('SMTP_PORT') || 0);
-    const user = this.configService.get<string>('SMTP_USER');
-    const pass = this.configService.get<string>('SMTP_PASS');
-    const from = this.configService.get<string>('SMTP_FROM');
-    const secure = this.configService.get<string>('SMTP_SECURE') === 'true';
+    const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
+    const from = this.configService.get<string>('SENDGRID_FROM');
 
-    if (host && port && user && pass && from) {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure,
-        auth: {
-          user,
-          pass,
-        },
-        family: 4,
-      });
+    if (apiKey && from) {
+      sgMail.setApiKey(apiKey);
       this.fromAddress = from;
+      this.isConfigured = true;
     } else {
       this.logger.warn(
-        'Email service is not configured. Missing SMTP_* environment variables.',
+        'Email service is not configured. Missing SENDGRID_API_KEY or SENDGRID_FROM environment variables.',
       );
     }
   }
@@ -45,12 +33,12 @@ export class EmailService {
     html: string;
     text?: string;
   }): Promise<void> {
-    if (!this.transporter || !this.fromAddress) {
+    if (!this.isConfigured || !this.fromAddress) {
       throw new InternalServerErrorException('Email service not configured');
     }
 
     try {
-      await this.transporter.sendMail({
+      await sgMail.send({
         from: this.fromAddress,
         to: params.to,
         subject: params.subject,
