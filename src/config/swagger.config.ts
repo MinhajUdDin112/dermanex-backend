@@ -6,7 +6,6 @@ export const swaggerConfig = new DocumentBuilder()
   .setDescription('API documentation for dermanex app')
   .setVersion('1.0')
   .addBearerAuth(
-    // 👈 This adds the Bearer Token option in Swagger UI
     {
       type: 'http',
       scheme: 'bearer',
@@ -15,20 +14,8 @@ export const swaggerConfig = new DocumentBuilder()
       description: 'Enter JWT token (without "Bearer " prefix)',
       in: 'header',
     },
-    'access-token', // name used for @ApiBearerAuth() reference
+    'access-token',
   )
-  //   .addGlobalParameters({
-  //     name: 'x-lang',
-  //     in: 'header',
-  //     required: false,
-  //     description:
-  //       "Language preference for API responses. Supported values: en (English), es (Spanish). Defaults to 'en'.",
-  //     schema: {
-  //       type: 'string',
-  //       enum: ['en', 'es'],
-  //       default: 'en',
-  //     },
-  //   })
   .build();
 
 const theme = new SwaggerTheme();
